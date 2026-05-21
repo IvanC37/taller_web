@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            outline: none;
+        }
+        .search-box button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            background: #ff6b6b;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .search-box button:hover {
+            background: #ee5a5a;
+        }
+        .current-weather {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .current-weather h2 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .current-weather .temp {
+            font-size: 72px;
+            font-weight: bold;
+        }
+        .current-weather .desc {
+            font-size: 24px;
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+        .current-weather .date {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        .forecast-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+        .day-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .day-card .date {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        .day-card .temp-max {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .day-card .temp-min {
+            font-size: 16px;
+            opacity: 0.7;
+            margin: 5px 0 10px;
+        }
+        .day-card .desc {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .error {
+            background: rgba(255, 100, 100, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .current-weather .temp {
+                font-size: 48px;
+            }
+            .search-box {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-box">
+            <input type="text" id="cityInput" placeholder="Enter city name...">
+            <button onclick="getWeather()">Search</button>
+        </div>
+        <div id="weatherDisplay"></div>
+    </div>
+
+    <script>
+        const API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY';
+        let geocodeCache = {};
+
+        async function geocode(cityName) {
+            if (geocodeCache[cityName]) return geocodeCache[cityName];
+            const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}`);
+            const data = await res.json();
+            if (!data.results || data.results.length === 0) throw new Error('City not found');
+            const { latitude, longitude, name, country } = data.results[0];
+            geocodeCache[cityName] = { latitude, longitude, name, country };
+            return { latitude, longitude, name, country };
+        }
+
+        async function getWeatherData(lat, lon) {
+            const today = new Date();
+            const endDate = today.toISOString().split('T')[0];
+            const startDate = new Date(today.setDate(today.getDate() - 5)).toISOString().split('T')[0];
+
+            const [weatherRes, hourlyRes] = await Promise.all([
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&current_weather=true&timezone=auto`),
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relativehumidity_2m,weathercode,windspeed_10m&past_days=5&forecast_days=1&timezone=auto`)
+            ]);
+
+            const [weatherData, hourlyData] = await Promise.all([weatherRes.json(), hourlyRes.json()]);
+            return { weatherData, hourlyData };
+        }
+
+        function getWeatherCodeDescription(code) {
+            const codes = {
+                0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+                45: 'Fog', 48: 'Depositing rime fog',
+                51: 'Light drizzle', 53: 'Moderate drizzle', 55: 'Dense drizzle',
+                61: 'Slight rain', 63: 'Moderate rain', 65: 'Heavy rain',
+                71: 'Slight snow', 73: 'Moderate snow', 75: 'Heavy snow',
+                77: 'Snow grains', 80: 'Slight rain showers', 81: 'Moderate rain showers', 82: 'Violent rain showers',
+                85: 'Slight snow showers', 86: 'Heavy snow showers',
+                95: 'Thunderstorm', 96: 'Thunderstorm with slight hail', 99: 'Thunderstorm with heavy hail'
+            };
+            return codes[code] || 'Unknown';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        async function getWeather() {
+            const cityInput = document.getElementById('cityInput');
+            const display = document.getElementById('weatherDisplay');
+            const city = cityInput.value.trim();
+
+            if (!city) {
+                display.innerHTML = '<div class="error">Please enter a city name</div>';
+                return;
+            }
+
+            display.innerHTML = '<div style="text-align:center;padding:20px;">Loading...</div>';
+
+            try {
+                const { latitude, longitude, name, country } = await geocode(city);
+                const { weatherData, hourlyData } = await getWeatherData(latitude, longitude);
+
+                const current = weatherData.current_weather;
+                const daily = weatherData.daily;
+
+                let html = `
+                    <div class="current-weather">
+                        <h2>${name}, ${country}</h2>
+                        <div class="temp">${Math.round(current.temperature)}°C</div>
+                        <div class="desc">${getWeatherCodeDescription(current.weathercode)}</div>
+                        <div class="date">Updated: ${new Date().toLocaleString()}</div>
+                    </div>
+                    <h3 class="forecast-title">Last 5 Days</h3>
+                    <div class="forecast-grid">
+                `;
+
+                for (let i = 0; i < 5; i++) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - (4 - i));
+                    const dateStr = date.toISOString().split('T')[0];
+                    html += `
+                        <div class="day-card">
+                            <div class="date">${formatDate(dateStr)}</div>
+                            <div class="temp-max">${Math.round(daily.temperature_2m_max[i])}°C</div>
+                            <div class="temp-min">${Math.round(daily.temperature_2m_min[i])}°C</div>
+                            <div class="desc">${getWeatherCodeDescription(daily.weathercode[i])}</div>
+                        </div>
+                    `;
+                }
+
+                html += '</div>';
+                display.innerHTML = html;
+
+            } catch (error) {
+                display.innerHTML = `<div class="error">${error.message}</div>`;
+            }
+        }
+
+        document.getElementById('cityInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') getWeather();
+        });
+
+        getWeather();
+    </script>
+</body>
+</html>

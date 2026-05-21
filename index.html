@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon Random</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        h1 {
+            color: #ff0000;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #cc0000;
+        }
+        
+        #pokemon-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        #pokemon-container2 {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .pokemon-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 150px;
+        }
+        .pokemon-card img {
+            width: 100px;
+            height: 100px;
+        }
+        .pokemon-card p {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: capitalize;
+            margin: 10px 0 0 0;
+        }
+        /* --- ESTILOS PARA LA ARENA DE BATALLA --- */
+        #arena-batalla, #panel-registro {
+            margin-left: auto !important;
+            margin-right: auto !important;
+            float: none !important; /* Por si Bootstrap intenta alinearlo a la izquierda */
+            display: none; /* Nota: Se mantendrá oculto hasta que empiece la batalla en JS */
+        }
+
+        /* --- ESTILOS PARA LA ARENA DE BATALLA --- */
+        #arena-batalla {
+            margin-top: 30px;
+            max-width: 600px;
+            width: 100%; /* Se adapta a pantallas pequeñas */
+        }
+
+        #arena-batalla .panel-primary {
+            border: 4px solid #3c5aa6; /* Azul clásico de Pokémon */
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            background-color: #f0f0f0;
+        }
+
+        #arena-batalla .panel-heading {
+            background: linear-gradient(135deg, #3c5aa6, #2a437e) !important;
+            color: #ffcb05 !important; /* Amarillo Pokémon */
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 1.3em;
+            text-align: center;
+            padding: 12px;
+            text-shadow: 2px 2px 0px #1d3161;
+            border-bottom: 4px solid #ffcb05;
+        }
+
+        /* El cuadro negro donde salen los ataques */
+        #log-combate {
+            max-height: 250px;
+            overflow-y: auto;
+            background: #111216 !important; 
+            color: #00ff66 !important; /* Texto verde retro */
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 20px !important;
+            border: 4px inset #444;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+            text-align: left; /* Mantiene los textos alineados a la izquierda para leer bien los turnos */
+        }
+
+
+        /* --- ESTILOS PARA EL PANEL DE REGISTRO DE GANADOR --- */
+        #panel-registro {
+            margin-top: 25px;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        #panel-registro .well {
+            background: #ffffff;
+            border: 4px solid #ff0000; /* Rojo Pokebola */
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+        }
+
+        #panel-registro h4 {
+            color: #333;
+            font-family: 'Arial Black', Gadget, sans-serif;
+            font-size: 1.4em;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        #panel-registro .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        #panel-registro label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #555;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #panel-registro input[type="text"] {
+            width: 100%;
+            padding: 10px 15px;
+            font-size: 15px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-sizing: border-box; 
+        }
+
+        #panel-registro input[type="text"]:focus {
+            border-color: #3c5aa6;
+            background-color: #fff;
+            outline: none;
+        }
+
+        #pokeGanadorInput {
+            background-color: #e9ecef !important;
+            color: #2b7300 !important;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            border: 2px dashed #2b7300 !important;
+        }
+
+        #panel-registro .btn-success {
+            background: linear-gradient(135deg, #28a745, #218838) !important;
+            border: none !important;
+            border-bottom: 4px solid #1e7e34 !important;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Poke Climaticos</h1>
+    <div id="pokemon-container"></div>
+    <br>
+    <div class="container">
+        <div class="search-box">
+            <input type="text" id="cityInput" placeholder="Enter city name...">
+            <button onclick="getPokemonPorClima()">Search</button>
+        </div>
+    </div>
+    <br>
+    <div id="pokemon-container2"></div>
+    <br>
+    <div class="container">
+        <div class="search-box">
+            <input type="text" id="cityInput2" placeholder="Enter city name...">
+            <button onclick="getPokemonPorClima2()">Search</button>
+        </div>
+    </div>
+    
+    <div class="row text-center" style="margin-top: 20px;">
+        <button id="btn-batalla" class="btn btn-danger btn-lg" onclick="iniciarBatalla()" style="display:none;">
+        ¡Iniciar Batalla!
+        </button>
+    </div>
+
+    <audio id="musica-batalla" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="sonido-ataque">
+        <source src="https://actions.google.com/sounds/v1/cartoon/cartoon_cowbell.ogg" type="audio/ogg">
+    </audio>
+
+    <div id="arena-batalla" class="container" style="margin-top: 30px; max-width: 600px; display: none;">
+        <div class="panel panel-primary">
+            <div class="panel-heading">💥 Bitácora de Combate 💥</div>
+            <div id="log-combate" class="panel-body text-left" style="max-height: 300px; overflow-y: auto; background: #222; color: #fff; font-family: monospace; padding: 15px;">
+                </div>
+        </div>
+    </div>
+    <div id="panel-registro" class="container" style="margin-top: 20px; max-width: 400px; display: none;">
+        <div class="well">
+            <h4>🏆 ¡Registrar Victoria!</h4>
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                <img id="pokeGanadorImg" src="" alt="Ganador" style="width: 120px; height: 120px; display: block; margin: 0 auto;">
+            </div>
+
+            <div class="form-group">
+                <label for="nombreEntrenador">Tu Nombre de Entrenador:</label>
+                <input type="text" id="nombreEntrenador" class="form-group" placeholder="Ej. Ash Ketchum">
+            </div>
+            <div class="form-group">
+                <label>Pokémon Ganador:</label>
+                <input type="text" id="pokeGanadorInput" class="form-group" readonly>
+            </div>
+            <button class="btn btn-success btn-block" onclick="guardarVictoria()">Guardar Registro</button>
+        </div>
+    </div>
+
+    <script>
+
+        let pokemon1 = null;
+        let pokemon2 = null;
+        let victoriasRegistradas = []; // Para guardar el historial más adelante
+
+        // Get random number
+        function getRandomNumber() {
+            return Math.floor(Math.random() * 151) + 1;
+        }
+
+        // Get one pokemon from API
+        async function getPokemon(id) {
+            // Use proxy to fix CORS error
+            let proxy = "https://corsproxy.io/?";
+            //let url = proxy + "https://pokeapi.co/api/v2/pokemon/" + id;
+            let url = "https://pokeapi.co/api/v2/pokemon/" + id;
+            let response = await fetch(url);
+            let data = await response.json();
+            return data;
+        }
+
+        // Show pokemon on screen
+        function showPokemon(pokemon) {
+            let container = document.getElementById("pokemon-container");
+            
+            let card = document.createElement("div");
+            card.className = "pokemon-card";
+            
+            card.setAttribute("data-id", pokemon.id);
+            card.setAttribute("data-nombre", pokemon.name);
+            card.setAttribute("data-tipo", pokemon.types[0].type.name);
+            card.setAttribute("data-img", pokemon.sprites.front_default);
+
+            card.id = `poke-${pokemon.id}`;
+
+            card.innerHTML = `
+                <img src="${pokemon.sprites.front_default}" alt="${pokemon.name}">
+                <p><strong>${pokemon.name}</strong></p>
+                <button onclick="capturarDatos(this.parentElement)">Seleccionar</button>
+            `;
+            
+            container.appendChild(card);
+        }
+
+        async function capturarDatos(card) {
+
+            let pokemon = {
+                pokemon_id: card.dataset.id,
+                nombre: card.dataset.nombre,
+                tipo: card.dataset.tipo
+            };
+
+            try {
+
+                const respuesta = await fetch("../app/guardar_pokemon.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams(pokemon)
+                });
+
+                const resultado = await respuesta.text();
+
+                alert(resultado);
+
+            } catch(error) {
+                console.log(error);
+            }
+        }
+
+        // Show pokemon on screen
+        function showPokemon2(pokemon) {
+            let container = document.getElementById("pokemon-container2");
+            
+            let card = document.createElement("div");
+            card.className = "pokemon-card";
+            
+            card.setAttribute("data-id", pokemon.id);
+            card.setAttribute("data-nombre", pokemon.name);
+            card.setAttribute("data-tipo", pokemon.types[0].type.name);
+            card.setAttribute("data-img", pokemon.sprites.front_default);
+
+            card.id = `poke-${pokemon.id}`;
+
+            card.innerHTML = `
+                <img src="${pokemon.sprites.front_default}" alt="${pokemon.name}">
+                <p><strong>${pokemon.name}</strong></p>
+                <button onclick="capturarDatos(this.parentElement)">Seleccionar</button>
+            `;
+            
+            container.appendChild(card);
+        }
+
+        // Main function
+        async function getRandomPokemon() {
+            let container = document.getElementById("pokemon-container");
+            container.innerHTML = "";
+            
+            // Get 5 random pokemon
+            for (let i = 0; i < 5; i++) {
+                let id = getRandomNumber();
+                let pokemon = await getPokemon(id);
+                showPokemon(pokemon);
+            }
+        }
+        // Configuración de rangos de clima
+        const CLIMA_CONFIG = {
+            calor: { temp: 25, tipo: 'fire' },
+            frio: { temp: 15, tipo: 'ice' },
+            templado: { tipo: 'grass' } // Por defecto
+        };
+        
+        const API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY';
+        let geocodeCache = {};
+
+        async function geocode(cityName) {
+            if (geocodeCache[cityName]) return geocodeCache[cityName];
+            const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
+            const data = await res.json();
+            if (!data.results || data.results.length === 0) throw new Error('Ciudad no encontrada');
+            return data.results[0];
+        }
+
+        async function getWeatherData(lat, lon) {
+            const today = new Date();
+            const endDate = today.toISOString().split('T')[0];
+            const startDate = new Date(today.setDate(today.getDate() - 5)).toISOString().split('T')[0];
+
+            const [weatherRes, hourlyRes] = await Promise.all([
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&current_weather=true&timezone=auto`),
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relativehumidity_2m,weathercode,windspeed_10m&past_days=5&forecast_days=1&timezone=auto`)
+            ]);
+
+            const [weatherData, hourlyData] = await Promise.all([weatherRes.json(), hourlyRes.json()]);
+            return { weatherData, hourlyData };
+        }
+
+        function getWeatherCodeDescription(code) {
+            const codes = {
+                0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+                45: 'Fog', 48: 'Depositing rime fog',
+                51: 'Light drizzle', 53: 'Moderate drizzle', 55: 'Dense drizzle',
+                61: 'Slight rain', 63: 'Moderate rain', 65: 'Heavy rain',
+                71: 'Slight snow', 73: 'Moderate snow', 75: 'Heavy snow',
+                77: 'Snow grains', 80: 'Slight rain showers', 81: 'Moderate rain showers', 82: 'Violent rain showers',
+                85: 'Slight snow showers', 86: 'Heavy snow showers',
+                95: 'Thunderstorm', 96: 'Thunderstorm with slight hail', 99: 'Thunderstorm with heavy hail'
+            };
+            return codes[code] || 'Unknown';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+        async function getWeather() {
+            const cityInput = document.getElementById('cityInput');
+            const city = cityInput.value.trim();
+
+            if (!city) {
+                alert("Por favor escribe una ciudad");
+                return null;
+            }
+
+            try {
+                const { latitude, longitude } = await geocode(city);
+                const data = await getWeatherData(latitude, longitude);
+                
+                return data.weatherData.current_weather.temperature;
+            } catch (error) {
+                console.error("Error en clima:", error);
+                return null;
+            }
+        }
+
+        
+        async function getWeather2() {
+            const cityInput = document.getElementById('cityInput2');
+            const city = cityInput.value.trim();
+
+            if (!city) {
+                alert("Por favor escribe una ciudad");
+                return null;
+            }
+
+            try {
+                const { latitude, longitude } = await geocode(city);
+                const data = await getWeatherData(latitude, longitude);
+                
+                return data.weatherData.current_weather.temperature;
+            } catch (error) {
+                console.error("Error en clima:", error);
+                return null;
+            }
+        }
+
+        document.getElementById('cityInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') getWeather();
+        });
+
+        async function getPokemonPorClima() {
+            const container = document.getElementById("pokemon-container");
+            container.innerHTML = "<p>Consultando el clima y buscando tu Pokémon...</p>";
+
+            try {
+                const tempActual = await getWeather();
+
+                if (tempActual === null) return;
+
+                let tipoBuscado = CLIMA_CONFIG.templado.tipo;
+                if (tempActual >= CLIMA_CONFIG.calor.temp) tipoBuscado = CLIMA_CONFIG.calor.tipo;
+                else if (tempActual <= CLIMA_CONFIG.frio.temp) tipoBuscado = CLIMA_CONFIG.frio.tipo;
+
+                const pokeTypeUrl = `https://pokeapi.co/api/v2/type/${tipoBuscado}`;
+                const typeRes = await fetch(pokeTypeUrl);
+                const typeData = await typeRes.json();
+
+                if (typeData.pokemon && typeData.pokemon.length > 0) {
+                    const lista = typeData.pokemon;
+                    const randomPoke = lista[Math.floor(Math.random() * lista.length)];
+                    
+                    const pokemonFinal = await getPokemon(randomPoke.pokemon.name);
+                    
+                    container.innerHTML = `<h3>En tu ciudad hace ${tempActual}°C (Tipo ${tipoBuscado})</h3>`;
+                    showPokemon(pokemonFinal);
+                    pokemon1 = pokemonFinal;
+                } else {
+                    container.innerHTML = "<p>No se encontraron Pokémon para este clima.</p>";
+                }
+
+            } catch (error) {
+                console.error("Error completo:", error);
+                container.innerHTML = "<p>Hubo un error al obtener los datos.</p>";
+            }
+        }
+        
+        async function getPokemonPorClima2() {
+            const container = document.getElementById("pokemon-container2");
+            container.innerHTML = "<p>Consultando el clima y buscando tu Pokémon...</p>";
+
+            try {
+                const tempActual = await getWeather2();
+
+                if (tempActual === null) return;
+
+                let tipoBuscado = CLIMA_CONFIG.templado.tipo;
+                if (tempActual >= CLIMA_CONFIG.calor.temp) tipoBuscado = CLIMA_CONFIG.calor.tipo;
+                else if (tempActual <= CLIMA_CONFIG.frio.temp) tipoBuscado = CLIMA_CONFIG.frio.tipo;
+
+                const pokeTypeUrl = `https://pokeapi.co/api/v2/type/${tipoBuscado}`;
+                const typeRes = await fetch(pokeTypeUrl);
+                const typeData = await typeRes.json();
+
+                if (typeData.pokemon && typeData.pokemon.length > 0) {
+                    const lista = typeData.pokemon;
+                    const randomPoke = lista[Math.floor(Math.random() * lista.length)];
+                    
+                    const pokemonFinal = await getPokemon(randomPoke.pokemon.name);
+                    
+                    container.innerHTML = `<h3>En tu ciudad hace ${tempActual}°C (Tipo ${tipoBuscado})</h3>`;
+                    showPokemon2(pokemonFinal);
+                    pokemon2 = pokemonFinal;
+                    document.getElementById("btn-batalla").style.display = "inline-block";
+                } else {
+                    container.innerHTML = "<p>No se encontraron Pokémon para este clima.</p>";
+                }
+
+            } catch (error) {
+                console.error("Error completo:", error);
+                container.innerHTML = "<p>Hubo un error al obtener los datos.</p>";
+            }
+        }
+        function obtener4Movimientos(pokemon) {
+            // Mezclamos el array de movimientos que da la API y agarramos los primeros 4
+            const movimientosMezclados = pokemon.moves.sort(() => 0.5 - Math.random());
+            return movimientosMezclados.slice(0, 4).map(m => m.move.name.replace("-", " "));
+        }
+
+        async function iniciarBatalla() {
+            if (!pokemon1 || !pokemon2) return alert("¡Necesitas dos Pokémon en pantalla para pelear!");
+
+            // Control de audio: Iniciar música de fondo
+            const musica = document.getElementById("musica-batalla");
+            const sonidoAtaque = document.getElementById("sonido-ataque");
+            
+            musica.currentTime = 0; // Reiniciar canción desde el segundo 0
+            musica.volume = 0.3;    // Volumen moderado para no aturdir
+            musica.play().catch(e => console.log("Audio bloqueado inicialmente:", e));
+
+            // Mostrar la arena y limpiar logs anteriores
+            const log = document.getElementById("log-combate");
+            document.getElementById("arena-batalla").style.display = "block";
+            log.innerHTML = "<p style='color: #00ff00;'>⚡ ¡La batalla está por comenzar! ⚡</p>";
+
+            // Extraer estadísticas reales de la PokeAPI
+            let hp1 = pokemon1.stats.find(s => s.stat.name === "hp").base_stat;
+            let atk1 = pokemon1.stats.find(s => s.stat.name === "attack").base_stat;
+            const moves1 = obtener4Movimientos(pokemon1);
+
+            let hp2 = pokemon2.stats.find(s => s.stat.name === "hp").base_stat;
+            let atk2 = pokemon2.stats.find(s => s.stat.name === "attack").base_stat;
+            const moves2 = obtener4Movimientos(pokemon2);
+
+            let turno = 1;
+            let ganador = null;
+
+            
+            // Función para pausar la ejecución los milisegundos que le digamos
+            const esperar = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+            // Bucle de combate por turnos
+            while (hp1 > 0 && hp2 > 0) {
+                log.innerHTML += `<br><span style='color: #e67e22;'>--- Turno ${turno} ---</span><br>`;
+                log.scrollTop = log.scrollHeight; // Auto-scroll inmediato
+
+                // Ataca Pokémon 1
+                let move1 = moves1[Math.floor(Math.random() * 4)];
+                let daño1 = Math.floor(Math.random() * (atk1 / 2)) + 5; // Daño basado en su ataque real
+                hp2 -= daño1;
+                log.innerHTML += `💥 <strong>${pokemon1.name.toUpperCase()}</strong> usó <em>${move1}</em> e hizo ${daño1} de daño.<br>`;
+                if (hp2 <= 0) { ganador = pokemon1; break; }
+
+                // Reproducir efecto de sonido de ataque
+                sonidoAtaque.currentTime = 0;
+                sonidoAtaque.play().catch(e => {});
+
+                await esperar (3000);
+
+                // Ataca Pokémon 2
+                let move2 = moves2[Math.floor(Math.random() * 4)];
+                let daño2 = Math.floor(Math.random() * (atk2 / 2)) + 5;
+                hp1 -= daño2;
+                log.innerHTML += `💥 <strong>${pokemon2.name.toUpperCase()}</strong> usó <em>${move2}</em> e hizo ${daño2} de daño.<br>`;
+                if (hp1 <= 0) { ganador = pokemon2; break; }
+                
+                // Reproducir efecto de sonido de ataque
+                sonidoAtaque.currentTime = 0;
+                sonidoAtaque.play().catch(e => {});
+
+                turno++;
+                if(turno > 30) break; // Seguro por si se vuelve infinito
+
+
+                await esperar (3000);
+            }
+
+            // Fin de la batalla
+            // Pausar música de fondo al terminar
+            musica.pause();
+            log.innerHTML += `<br>🎉 <span style='color: #00ff00; font-size: 1.2em;'>¡${ganador.name.toUpperCase()} HA GANADO LA BATALLA!</span> 🎉`;
+            log.scrollTop = log.scrollHeight; // Auto-scroll al final del log
+
+            abrirPanelRegistro(ganador.name, ganador);
+
+            // Abrir el panel de registro
+            abrirPanelRegistro(ganador.name);
+        }
+
+        function abrirPanelRegistro(nombrePokemon, pokemon) {
+            // 1. Muestra el panel de registro oculto
+            document.getElementById("panel-registro").style.display = "block";
+            
+            // 2. Inyecta el nombre en el cuadro de texto (Input)
+            document.getElementById("pokeGanadorInput").value = nombrePokemon.toUpperCase();
+            
+            // 3. Inyecta la imagen directamente en la etiqueta <img> que pusimos en el HTML
+            document.getElementById("pokeGanadorImg").src = pokemon.sprites.front_default;
+        }
+        
+        async function guardarVictoria() {
+            let entrenador = document.getElementById("nombreEntrenador").value.trim();
+            let pokemon = document.getElementById("pokeGanadorInput").value;
+
+            if (!entrenador) return alert("Por favor, introduce tu nombre de entrenador.");
+
+            let ganador = {
+                nombre: entrenador,
+                pokemon: pokemon
+            };
+
+            try {
+                const respuesta = await fetch("app/guardar_ganador.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams(ganador)
+                });
+                const resultado = await respuesta.text();
+                alert(resultado);
+            } catch (error) {
+                console.error("Error al guardar la victoria:", error);
+            }
+
+            // Resetear formulario y ocultar paneles
+            document.getElementById("nombreEntrenador").value = "";
+            document.getElementById("panel-registro").style.display = "none";
+        }
+    </script>
+</body>
+</html>
