@@ -18,7 +18,7 @@ $conn = pg_connect("
 host=$host
 port=$port
 dbname=$dbname
-user=$username
+user=$user
 password=$password
 ");
 
